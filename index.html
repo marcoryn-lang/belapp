@@ -320,7 +320,17 @@
         <button type="button" class="btn btn-sm btn-danger" id="ghClear">Verwijderen</button>
       </div>
       <p class="hint" id="ghStatus" style="margin-top:0"></p>
-      <p class="hint" style="margin-top:0">Je gegevens (bellijst, afspraken, terugbellijst, spiekbrief, tellers, laatste verslag, aangepaste teksten, instellingen en het lopende gesprek) worden als één bestand naar je eigen private GitHub-repo geschreven, zodat je ze op Mac, NUC en iPad hebt. Elke backup is een commit, dus oudere versies blijven terug te vinden in de geschiedenis van de repo. Het Pipedrive-token en het GitHub-token gaan bewust <b>niet</b> mee. Zet die per apparaat opnieuw. Gebruik een fine-grained token met alleen toegang tot de data-repo (Contents: Read and write).</p>
+      <p class="hint" style="margin-top:0">Je gegevens (bellijst, afspraken, terugbellijst, gesprekslog, spiekbrief, tellers, laatste verslag, aangepaste teksten, instellingen en het lopende gesprek) worden als één bestand naar je eigen private GitHub-repo geschreven, zodat je ze op Mac, NUC en iPad hebt. Elke backup is een commit, dus oudere versies blijven terug te vinden in de geschiedenis van de repo. Het Pipedrive-token en het GitHub-token gaan bewust <b>niet</b> mee. Zet die per apparaat opnieuw. Gebruik een fine-grained token met alleen toegang tot de data-repo (Contents: Read and write).</p>
+      <h3>Uitdraaien</h3>
+      <div class="row" style="margin-top:0">
+        <div class="field" style="flex:1"><label for="expVan">Van (mag leeg)</label><input id="expVan" type="date"></div>
+        <div class="field" style="flex:1"><label for="expTot">Tot en met (mag leeg)</label><input id="expTot" type="date"></div>
+      </div>
+      <div class="row" style="margin-top:0">
+        <button type="button" class="btn btn-sm btn-primary" id="expGesprekken">Gesprekken exporteren (CSV)</button>
+      </div>
+      <p class="hint" id="expStatus" style="margin-top:0"></p>
+      <p class="hint" style="margin-top:0">Eén regel per gesprek, ook bij geen gehoor, voicemail of verkeerd nummer: datum en tijd (moment van "Nieuw gesprek"), bedrijf, contactpersoon, telefoon, uitkomst, vervolg (demo of terugbelmoment), bezwaren en je notities. Het lopende gesprek gaat ook mee.</p>
       <h3>Teksten</h3>
       <button type="button" class="linkbtn" id="resetOverrides">Alle aangepaste teksten terugzetten</button>
     </div>
@@ -565,7 +575,7 @@ const store = (() => {
 const K = {
   settings: 'cc3_settings', overrides: 'cc3_overrides', draft: 'cc4_draft', lastnote: 'cc3_lastnote',
   afspraken: 'cc3_afspraken', terugbel: 'cc3_terugbel', spiek: 'cc3_spiek',
-  leads: 'cc4_leads', stats: 'cc4_stats', pdtoken: 'cc4_pd_token'
+  leads: 'cc4_leads', stats: 'cc4_stats', pdtoken: 'cc4_pd_token', gesprekken: 'cc5_gesprekken'
 };
 const K_GH = 'cc5_gh_config';
 // On GitHub Pages (<user>.github.io) the owner follows from the address; elsewhere it is filled in under Instellingen.
@@ -2190,7 +2200,9 @@ let stats = store.get(K.stats, {});
 const S = {
   current: null, history: [], asked: [], editing: false, searchSel: 0, tab: 'gesprek',
   leadId: null, leadCounted: false, endApplied: null, pd: null, pdResults: null, pdBusy: false,
-  blFilter: 'open', blImport: null, agendaSrc: ''
+  blFilter: 'open', blImport: null, agendaSrc: '',
+  // Gesprekslog: id en begintijd van het lopende gesprek, telefoon en vastgelegd vervolg.
+  callId: null, startedAt: null, telefoon: '', vervolg: [], loggedEnd: null
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -2206,6 +2218,7 @@ function loadList(key) {
 let afspraken = loadList(K.afspraken);
 let terugbel = loadList(K.terugbel);
 let leads = loadList(K.leads);
+let gesprekken = loadList(K.gesprekken);
 
 /* =========================================================================
    Tekst opbouwen
@@ -2268,6 +2281,11 @@ function toUtcParts(dateIso, time) {
   const iso = new Date(y, m - 1, d, hh, mm).toISOString();
   return { due_date: iso.slice(0, 10), due_time: iso.slice(11, 16) };
 }
+function nlDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : (iso || '');
+}
+function hhmm(d) { return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 function digits(s) { return String(s || '').replace(/\D/g, ''); }
 
@@ -2324,6 +2342,8 @@ function go(next) {
     return;
   }
   if (id === S.current) return;
+  // Zonder klik op "Nieuw gesprek" (eerste gesprek na openen) begint het gesprek bij de eerste stap.
+  if (!S.startedAt) S.startedAt = new Date().toISOString();
   S.history.push(S.current);
   S.current = id;
   S.editing = false;
@@ -2340,6 +2360,7 @@ function finalizeCall() {
   const node = NODES[S.current];
   if (S.history.length || node.end) store.set(K.lastnote, buildNote());
   if (node.end) recordStat(route()[0], node.end.outcome);
+  logCall();
 }
 function resetCallState() {
   S.history = [];
@@ -2351,12 +2372,18 @@ function resetCallState() {
   S.endApplied = null;
   S.pd = null;
   S.pdResults = null;
+  S.callId = uid();
+  S.startedAt = null;
+  S.telefoon = '';
+  S.vervolg = [];
+  S.loggedEnd = null;
   ['#ctxNaam', '#ctxBedrijf', '#ctxFunctie', '#notes'].forEach(sel => { $(sel).value = ''; });
   closeSearch();
 }
 function newCall() {
   finalizeCall();
   resetCallState();
+  S.startedAt = new Date().toISOString();
   setTab('gesprek');
   render();
   toast('Nieuw gesprek gestart');
@@ -2418,22 +2445,28 @@ function applyEndToLead(node) {
 /* =========================================================================
    Verslag van het gesprek
    ========================================================================= */
+// Bezwaren, kosten en opening uit de route van een gesprek (voor verslag en gesprekslog).
+function callFacts(r) {
+  const objections = [...new Set(r.filter(id => NODES[id].stage === 'bezwaar').map(id => NODES[id].short || NODES[id].title))];
+  const kosten = r.some(id => ['b_kosten', 'b_budget', 'b_fee', 'i_garantie', 't_recruiter'].includes(id));
+  const pitch = PITCHES.find(p => p.id === r[0]);
+  const opening = pitch ? `${pitch.key === 'std' ? 'Standaard' : 'Pitch ' + pitch.label} – ${pitch.name}` : NODES[r[0]].title;
+  return { objections, kosten, opening };
+}
 function buildNote() {
   const c = ctx();
   const r = route();
   const endNode = NODES[S.current].end ? NODES[S.current] : null;
-  const objections = [...new Set(r.filter(id => NODES[id].stage === 'bezwaar').map(id => NODES[id].short || NODES[id].title))];
+  const facts = callFacts(r);
   const when = new Date().toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' });
-  const opening = NODES[r[0]];
   const lines = [
     `${when} · ${c.bedrijf || '(bedrijf)'}${c.naam ? ' · ' + c.naam : ''} · gebeld door ${settings.beller || DEFAULTS.beller}`,
     `Uitkomst: ${endNode ? endNode.end.status : 'gesprek nog bezig'}`
   ];
   if (c.functie) lines.push(`Zoekt: ${c.functie}`);
-  if (objections.length) lines.push(`Bezwaren: ${objections.join(', ')}`);
-  lines.push(`Kosten besproken: ${r.some(id => ['b_kosten', 'b_budget', 'b_fee', 'i_garantie', 't_recruiter'].includes(id)) ? 'ja' : 'nee'}`);
-  const pitch = PITCHES.find(p => p.id === r[0]);
-  lines.push(`Opening: ${pitch ? `${pitch.key === 'std' ? 'Standaard' : 'Pitch ' + pitch.label} – ${pitch.name}` : opening.title}`);
+  if (facts.objections.length) lines.push(`Bezwaren: ${facts.objections.join(', ')}`);
+  lines.push(`Kosten besproken: ${facts.kosten ? 'ja' : 'nee'}`);
+  lines.push(`Opening: ${facts.opening}`);
   lines.push(`Route: ${r.map(id => NODES[id].short || NODES[id].title).join(' › ')}`);
   const notes = $('#notes').value.trim();
   if (notes) lines.push(`Notities: ${notes}`);
@@ -2441,6 +2474,99 @@ function buildNote() {
 }
 function noteHtml(text) {
   return esc(text).replace(/\n/g, '<br>');
+}
+
+/* =========================================================================
+   Gesprekslog: één regel per gesprek, voor de CSV-uitdraai in Instellingen.
+   Een gesprek telt zodra er één stap is gezet of een uitkomst is gekozen.
+   ========================================================================= */
+function stateStarted(s) { return s.history.length > 0 || Boolean(NODES[s.current] && NODES[s.current].end); }
+function callStarted() { return stateStarted(S); }
+function callState() {
+  return {
+    callId: S.callId, startedAt: S.startedAt, current: S.current, history: S.history, ctx: ctx(),
+    notes: $('#notes').value, telefoon: S.telefoon, vervolg: S.vervolg, at: Date.now()
+  };
+}
+function logEntry(s) {
+  const node = NODES[s.current];
+  const facts = callFacts([...s.history, s.current]);
+  const c = s.ctx || {};
+  return {
+    id: s.callId,
+    start: s.startedAt || new Date(s.at || Date.now()).toISOString(),
+    beller: settings.beller || DEFAULTS.beller,
+    bedrijf: c.bedrijf || '', naam: c.naam || '', telefoon: s.telefoon || '', functie: c.functie || '',
+    uitkomst: node.end ? node.end.status : 'Geen uitkomst gekozen',
+    vervolg: (Array.isArray(s.vervolg) ? s.vervolg : []).join(' · '),
+    bezwaren: facts.objections.join(', '),
+    kosten: facts.kosten ? 'ja' : 'nee',
+    opening: facts.opening,
+    notities: String(s.notes || '').trim()
+  };
+}
+// Werkt de regel van dit gesprek bij (of haalt hem weg als het gesprek terug naar het begin is gegaan).
+function writeLog(s) {
+  if (!s.callId || !NODES[s.current]) return;
+  const i = gesprekken.findIndex(g => g.id === s.callId);
+  if (!stateStarted(s)) {
+    if (i === -1) return;
+    gesprekken.splice(i, 1);
+  } else if (i === -1) gesprekken.push(logEntry(s));
+  else gesprekken[i] = logEntry(s);
+  if (!store.set(K.gesprekken, gesprekken)) toast('Gesprek niet blijvend opgeslagen: de opslag is vol of geblokkeerd. Exporteer en maak een backup.', true);
+}
+function logCall() {
+  if (!S.callId) S.callId = uid();
+  if (callStarted() && !S.startedAt) S.startedAt = new Date().toISOString();
+  writeLog(callState());
+}
+// Afspraak of terugbelmoment dat tijdens dit gesprek is vastgelegd, komt als vervolg in het log.
+function attachFollowUp(text, d) {
+  if (!callStarted()) return;
+  const c = ctx();
+  const norm = v => String(v || '').trim().toLowerCase();
+  const sameLead = Boolean(d.lead) && d.lead === S.leadId;
+  const otherContact = (c.bedrijf && d.bedrijf && norm(c.bedrijf) !== norm(d.bedrijf)) || (c.naam && d.naam && norm(c.naam) !== norm(d.naam));
+  if (!sameLead && otherContact) return;
+  if (!S.vervolg.includes(text)) S.vervolg.push(text);
+  if (!S.telefoon && d.telefoon) S.telefoon = d.telefoon;
+  logCall();
+  saveDraft();
+}
+function renderExportStatus() {
+  const el = $('#expStatus');
+  if (!gesprekken.length) { el.textContent = 'Nog geen gesprekken vastgelegd. Het log begint bij je eerstvolgende gesprek.'; return; }
+  const first = gesprekken.reduce((min, g) => (g.start < min ? g.start : min), gesprekken[0].start);
+  const d = new Date(first);
+  el.textContent = `${gesprekken.length} gesprek(ken) vastgelegd${Number.isNaN(d.getTime()) ? '' : ' sinds ' + nlDate(isoDate(d))}.`;
+}
+function exportGesprekken() {
+  logCall(); // het lopende gesprek gaat ook mee
+  const van = $('#expVan').value;
+  const tot = $('#expTot').value;
+  if (van && tot && van > tot) { toast('"Van" ligt na "Tot en met"', true); return; }
+  const dated = gesprekken.map(g => ({ g, d: new Date(g.start) }));
+  const broken = dated.filter(x => Number.isNaN(x.d.getTime()));
+  if (broken.length) log('WARN', `${broken.length} gesprek(ken) zonder geldige begintijd overgeslagen bij export`, broken.map(x => x.g.id));
+  const rows = dated
+    .filter(x => !Number.isNaN(x.d.getTime()))
+    .filter(x => { const day = isoDate(x.d); return (!van || day >= van) && (!tot || day <= tot); })
+    .sort((a, b) => a.d - b.d)
+    .map(x => ({ ...x.g, datum: nlDate(isoDate(x.d)), tijd: hhmm(x.d) }));
+  renderExportStatus();
+  if (!rows.length) {
+    toast(gesprekken.length ? 'Geen gesprekken in deze periode' : 'Nog geen gesprekken vastgelegd. Het log begint bij je eerstvolgende gesprek.');
+    return;
+  }
+  const periode = van || tot ? `${van || 'begin'}-tot-${tot || todayIso()}` : todayIso();
+  downloadCsv(`gesprekken-${periode}.csv`, [
+    { key: 'datum', label: 'Datum' }, { key: 'tijd', label: 'Tijd' }, { key: 'bedrijf', label: 'Bedrijf' },
+    { key: 'naam', label: 'Contactpersoon' }, { key: 'telefoon', label: 'Telefoon' }, { key: 'functie', label: 'Zoekt' },
+    { key: 'uitkomst', label: 'Uitkomst' }, { key: 'vervolg', label: 'Vervolg' }, { key: 'bezwaren', label: 'Bezwaren' },
+    { key: 'kosten', label: 'Kosten besproken' }, { key: 'opening', label: 'Opening' }, { key: 'notities', label: 'Notities' },
+    { key: 'beller', label: 'Gebeld door' }
+  ], rows);
 }
 function shortNote() {
   const c = ctx();
@@ -2674,6 +2800,7 @@ function collectSyncData() {
   data.leads = store.get(K.leads, []);
   data.afspraken = store.get(K.afspraken, []);
   data.terugbel = store.get(K.terugbel, []);
+  data.gesprekken = store.get(K.gesprekken, []);
   data.spiek = store.get(K.spiek, '');
   data.stats = store.get(K.stats, {});
   data.lastnote = store.get(K.lastnote, null);
@@ -2686,7 +2813,9 @@ function collectSyncData() {
 }
 function countOf(list) { return Array.isArray(list) ? list.length : 0; }
 function syncSummary(data) {
-  return `${countOf(data.leads)} leads, ${countOf(data.afspraken)} afspraken, ${countOf(data.terugbel)} terugbellen`;
+  // Oudere backups hebben geen gesprekslog; dan noemen we het niet (het lokale log blijft staan).
+  const calls = Array.isArray(data.gesprekken) ? `, ${data.gesprekken.length} gesprekken` : '';
+  return `${countOf(data.leads)} leads, ${countOf(data.afspraken)} afspraken, ${countOf(data.terugbel)} terugbellen${calls}`;
 }
 function ghContentsUrl() {
   const c = ghConfig();
@@ -2798,6 +2927,8 @@ async function ghLoad() {
     if (Array.isArray(decoded.leads)) store.set(K.leads, decoded.leads);
     if (Array.isArray(decoded.afspraken)) store.set(K.afspraken, decoded.afspraken);
     if (Array.isArray(decoded.terugbel)) store.set(K.terugbel, decoded.terugbel);
+    // Oudere backups hebben nog geen gesprekslog; dan blijft het lokale log staan.
+    if (Array.isArray(decoded.gesprekken)) store.set(K.gesprekken, decoded.gesprekken);
     if (decoded.spiek !== undefined) store.set(K.spiek, decoded.spiek);
     if (decoded.stats !== undefined) store.set(K.stats, decoded.stats);
     if (decoded.lastnote !== undefined) store.set(K.lastnote, decoded.lastnote);
@@ -2810,6 +2941,7 @@ async function ghLoad() {
     leads = loadList(K.leads);
     afspraken = loadList(K.afspraken);
     terugbel = loadList(K.terugbel);
+    gesprekken = loadList(K.gesprekken);
     overrides = store.get(K.overrides, {});
     stats = store.get(K.stats, {});
     // Lopend gesprek alleen overnemen als de backup er een recent gesprek in heeft;
@@ -2841,6 +2973,8 @@ async function ghLoad() {
 function render() {
   const v = view(S.current);
   if (v.end) applyEndToLead(v);
+  // Bij een uitkomst meteen in het log, zodat het gesprek ook bewaard blijft als je de pagina sluit.
+  if (v.end && S.loggedEnd !== v.id) { S.loggedEnd = v.id; logCall(); }
   renderLeadbar();
   renderStepper(v);
   renderPath();
@@ -3089,6 +3223,7 @@ async function saveAfspraak() {
   } else {
     item = { ...d, id: uid(), created: new Date().toISOString() };
     afspraken.push(item);
+    attachFollowUp(`Demo ${nlDate(d.datum)}${d.tijd ? ' ' + d.tijd : ''}`, d);
   }
   if (d.lead) {
     const lead = leads.find(l => l.id === d.lead);
@@ -3189,6 +3324,7 @@ async function saveTerugbel() {
   } else {
     item = { ...d, id: uid(), done: false, created: new Date().toISOString() };
     terugbel.push(item);
+    attachFollowUp(`Terugbellen ${nlDate(d.datum)}${d.tijd ? ' ' + d.tijd : ''}`, d);
   }
   if (d.lead) {
     const lead = leads.find(l => l.id === d.lead);
@@ -3252,6 +3388,8 @@ function renderTerugbel() {
 function startFromCallback(t) {
   finalizeCall();
   resetCallState();
+  S.startedAt = new Date().toISOString();
+  S.telefoon = t.telefoon || '';
   $('#ctxNaam').value = t.naam || '';
   $('#ctxBedrijf').value = t.bedrijf || '';
   $('#notes').value = `Terugbellen gepland op ${fmtDay(t.datum)}${t.tijd ? ' ' + t.tijd : ''}.${t.notitie ? ' Vorige keer: ' + t.notitie : ''}`;
@@ -3471,6 +3609,8 @@ function nextLead(afterId) {
 function startLead(lead) {
   finalizeCall();
   resetCallState();
+  S.startedAt = new Date().toISOString();
+  S.telefoon = lead.telefoon || '';
   S.leadId = lead.id;
   $('#ctxBedrijf').value = lead.bedrijf || '';
   $('#ctxNaam').value = lead.naam || '';
@@ -3627,14 +3767,22 @@ function closeSearch() {
 function saveDraft() {
   store.set(K.draft, {
     current: S.current, history: S.history, asked: S.asked, ctx: ctx(), notes: $('#notes').value,
-    leadId: S.leadId, leadCounted: S.leadCounted, endApplied: S.endApplied, pd: S.pd, at: Date.now()
+    leadId: S.leadId, leadCounted: S.leadCounted, endApplied: S.endApplied, pd: S.pd,
+    callId: S.callId, startedAt: S.startedAt, telefoon: S.telefoon, vervolg: S.vervolg, at: Date.now()
   });
 }
 function restoreDraft() {
   const d = store.get(K.draft, null);
   const valid = d && NODES[d.current] && Array.isArray(d.history) && d.history.every(id => NODES[id]);
-  if (!valid || Date.now() - (d.at || 0) > DRAFT_MAX_AGE_MS) { S.current = startId(); return; }
+  const expired = valid && Date.now() - (d.at || 0) > DRAFT_MAX_AGE_MS;
+  // Een verlopen gesprek wordt niet hersteld, maar komt wel in het gesprekslog.
+  if (expired && d.callId) writeLog(d);
+  if (!valid || expired) { S.current = startId(); return; }
   S.current = d.current;
+  S.callId = d.callId || uid();
+  S.startedAt = d.startedAt || null;
+  S.telefoon = d.telefoon || '';
+  S.vervolg = Array.isArray(d.vervolg) ? d.vervolg : [];
   S.history = d.history;
   S.asked = Array.isArray(d.asked) ? d.asked : [];
   S.leadId = d.leadId && leads.some(l => l.id === d.leadId) ? d.leadId : null;
@@ -3916,6 +4064,11 @@ function bindEvents() {
   });
   $('#ghStatus').textContent = ghEnabled() ? 'Ingesteld. Klik op "Nu opslaan".' : 'Nog niet ingesteld. Vul de vier velden in.';
 
+  /* Uitdraaien */
+  $('#expGesprekken').addEventListener('click', exportGesprekken);
+  $('#settings').addEventListener('toggle', e => { if (e.currentTarget.open) renderExportStatus(); });
+  renderExportStatus();
+
   $('#resetOverrides').addEventListener('click', () => {
     const count = Object.keys(overrides).length;
     if (!count) { toast('Er zijn geen aangepaste teksten'); return; }
@@ -4079,7 +4232,8 @@ function init() {
 window.__belhulp = {
   NODES, FIXED, PITCHES, S, validate, audit, searchNodes, buildNote, go, back, newCall, setTab, fixedTarget,
   parseDelimited, guessMapping, mapRow, commitImport, nextLead, callNext, startLead, pdRequest, onAgendaMessage, buildAgendaUrl,
-  get leads() { return leads; }, get afspraken() { return afspraken; }, get terugbel() { return terugbel; }, get stats() { return stats; }
+  get leads() { return leads; }, get afspraken() { return afspraken; }, get terugbel() { return terugbel; }, get stats() { return stats; },
+  get gesprekken() { return gesprekken; }, logCall, exportGesprekken, collectSyncData, startFromCallback, saveAfspraak, saveTerugbel
 };
 init();
 </script>
