@@ -356,6 +356,26 @@
   .item-note summary { cursor: pointer; }
   .item-actions { display: flex; gap: 6px; flex-wrap: wrap; }
   .empty-state { color: var(--muted); font-size: .9rem; margin: 10px 0 0; }
+
+  /* ---------- Terugkijken ---------- */
+  .tk-head, .tk-grid, .tk-calls { margin-bottom: 16px; }
+  .tk-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  .tk-table th, .tk-table td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .tk-table th { color: var(--muted); font-weight: 600; }
+  .tk-table td.num, .tk-table th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tk-step { font-weight: 600; margin: 10px 0 4px; }
+  .tk-step:first-child { margin-top: 0; }
+  .tk-outcome { display: inline-block; margin-left: 8px; font-size: .78rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .tk-outcome.afspraak { background: var(--yes-soft); color: var(--yes); }
+  .tk-detail { margin-top: 6px; }
+  .tk-detail > summary { cursor: pointer; color: var(--accent); font-size: .85rem; width: max-content; }
+  .tk-timeline { list-style: none; margin: 8px 0 0; padding: 0 0 0 14px; border-left: 2px solid var(--border); display: flex; flex-direction: column; gap: 3px; font-size: .9rem; }
+  .tk-timeline .said { color: var(--muted); font-style: italic; }
+  .tk-timeline .said.bezwaar { color: var(--warn); font-style: normal; font-weight: 600; }
+  .tk-timeline details > summary { cursor: pointer; }
+  .tk-text { font-size: .88rem; margin: 4px 0 6px; padding: 8px 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; }
+  .tk-text p { margin: 0 0 .5em; }
+  .tk-text p:last-child { margin-bottom: 0; }
   .pdtag { font-size: .72rem; color: var(--yes); border: 1px solid var(--yes); border-radius: 999px; padding: 0 6px; margin-left: 6px; }
 
   .agenda-frame { width: 100%; height: 720px; border: 0; border-radius: 10px; background: #fff; }
@@ -472,6 +492,7 @@
   <button type="button" class="tab" role="tab" id="tabbtn-afspraken" data-tab="afspraken" aria-controls="tab-afspraken" aria-selected="false">Afspraken <span class="count" id="count-afspraken" hidden></span></button>
   <button type="button" class="tab" role="tab" id="tabbtn-terugbel" data-tab="terugbel" aria-controls="tab-terugbel" aria-selected="false">Terugbellen <span class="count" id="count-terugbel" hidden></span></button>
   <button type="button" class="tab" role="tab" id="tabbtn-spiek" data-tab="spiek" aria-controls="tab-spiek" aria-selected="false">Spiekbrief</button>
+  <button type="button" class="tab" role="tab" id="tabbtn-terugkijken" data-tab="terugkijken" aria-controls="tab-terugkijken" aria-selected="false">Terugkijken</button>
 </nav>
 
 <!-- ===================== Tabblad: Gesprek ===================== -->
@@ -639,6 +660,28 @@
 <!-- ===================== Tabblad: Spiekbrief ===================== -->
 <section class="page" id="tab-spiek" role="tabpanel" aria-labelledby="tabbtn-spiek" hidden>
   <div class="page-grid" id="spiek-grid"></div>
+</section>
+
+<!-- ===================== Tabblad: Terugkijken ===================== -->
+<section class="page" id="tab-terugkijken" role="tabpanel" aria-labelledby="tabbtn-terugkijken" hidden>
+  <div class="card tk-head">
+    <div class="list-head">
+      <h2>Terugkijken: wat komt het meest voor?</h2>
+      <div class="seg" role="group" aria-label="Periode" id="tkPeriod">
+        <button type="button" data-days="7" aria-pressed="true">7 dagen</button>
+        <button type="button" data-days="30" aria-pressed="false">30 dagen</button>
+        <button type="button" data-days="0" aria-pressed="false">Alles</button>
+      </div>
+    </div>
+    <p class="hint" id="tkSummary" style="margin-top:4px"></p>
+  </div>
+  <div class="page-grid tk-grid" id="tk-grid"></div>
+  <div class="card tk-calls">
+    <div class="list-head"><h2>Gesprekken</h2></div>
+    <p class="hint" style="margin-top:0">Klik op "Verloop" voor de tijdlijn van het gesprek. Klik op een stap om de tekst te zien die je daar voorlas (uit het huidige script).</p>
+    <ul class="items" id="tk-list"></ul>
+    <div class="row"><button type="button" class="btn btn-sm" id="tk-more" hidden>Meer tonen</button></div>
+  </div>
 </section>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -2312,7 +2355,7 @@ Toch is dat geen reden om het vaste contract op te zeggen: elke maand moet er hu
 const FLOW = ['opening', 'vragen', 'pitch', 'afspraak', 'afronden'];
 const RETURN_STAGES = ['vragen', 'pitch', 'afspraak'];
 const STAGE_LABEL = { opening: 'Opening', vragen: 'Vragen', pitch: 'Pitch', afspraak: 'Afspraak', afronden: 'Afronden' };
-const TABS = ['gesprek', 'bellijst', 'afspraken', 'terugbel', 'spiek'];
+const TABS = ['gesprek', 'bellijst', 'afspraken', 'terugbel', 'spiek', 'terugkijken'];
 const AF_FIELDS = ['id', 'datum', 'tijd', 'bedrijf', 'naam', 'email', 'functie', 'verslag', 'pdperson', 'pdorg', 'lead'];
 const TB_FIELDS = ['id', 'datum', 'tijd', 'naam', 'bedrijf', 'telefoon', 'notitie', 'pdperson', 'pdorg', 'lead'];
 const LEAD_FIELDS = [
@@ -2339,7 +2382,11 @@ const S = {
   leadId: null, leadCounted: false, endApplied: null, pd: null, pdResults: null, pdBusy: false,
   blFilter: 'open', blImport: null, agendaSrc: '',
   // Gesprekslog: id en begintijd van het lopende gesprek, telefoon en vastgelegd vervolg.
-  callId: null, startedAt: null, telefoon: '', vervolg: [], loggedEnd: null
+  callId: null, startedAt: null, telefoon: '', vervolg: [], loggedEnd: null,
+  // Verloop van het gesprek: per klik { from, to, label (knoptekst), kind: antwoord | bezwaar | zoeken | knop }
+  verloop: [],
+  // Tabblad Terugkijken: periode in dagen (0 = alles) en hoeveel gesprekken er getoond worden
+  tkDays: 7, tkLimit: 30
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -2486,7 +2533,8 @@ function fixedLevel(f) {
 function fixedTarget(f) {
   return f.ladder[Math.min(fixedLevel(f), f.ladder.length - 1)];
 }
-function go(next) {
+// meta: { label: tekst op de aangeklikte knop, kind: 'antwoord' | 'bezwaar' | 'zoeken' | 'knop' } voor het verloop
+function go(next, meta = {}) {
   const id = resolve(next);
   if (!NODES[id]) {
     log('FOUT', `Onbekende stap "${next}" vanaf "${S.current}"`);
@@ -2497,6 +2545,7 @@ function go(next) {
   // Zonder klik op "Nieuw gesprek" (eerste gesprek na openen) begint het gesprek bij de eerste stap.
   if (!S.startedAt) S.startedAt = new Date().toISOString();
   S.history.push(S.current);
+  S.verloop.push({ from: S.current, to: id, label: String(meta.label || '').trim(), kind: meta.kind || 'knop' });
   S.current = id;
   S.editing = false;
   closeSearch();
@@ -2505,6 +2554,7 @@ function go(next) {
 function back() {
   if (!S.history.length) return;
   S.current = S.history.pop();
+  S.verloop.pop(); // een misklik telt niet mee in het verloop
   S.editing = false;
   render();
 }
@@ -2529,6 +2579,7 @@ function resetCallState() {
   S.telefoon = '';
   S.vervolg = [];
   S.loggedEnd = null;
+  S.verloop = [];
   ['#ctxNaam', '#ctxBedrijf', '#ctxFunctie', '#notes'].forEach(sel => { $(sel).value = ''; });
   closeSearch();
 }
@@ -2562,6 +2613,7 @@ function setTab(name) {
   if (name === 'afspraken') { renderAfspraken(); renderAgenda(false); }
   if (name === 'terugbel') renderTerugbel();
   if (name === 'bellijst') renderBellijst();
+  if (name === 'terugkijken') renderTerugkijken();
 }
 
 /* =========================================================================
@@ -2637,7 +2689,7 @@ function callStarted() { return stateStarted(S); }
 function callState() {
   return {
     callId: S.callId, startedAt: S.startedAt, current: S.current, history: S.history, ctx: ctx(),
-    notes: $('#notes').value, telefoon: S.telefoon, vervolg: S.vervolg, at: Date.now()
+    notes: $('#notes').value, telefoon: S.telefoon, vervolg: S.vervolg, verloop: S.verloop, at: Date.now()
   };
 }
 function logEntry(s) {
@@ -2650,7 +2702,9 @@ function logEntry(s) {
     beller: settings.beller || DEFAULTS.beller,
     bedrijf: c.bedrijf || '', naam: c.naam || '', telefoon: s.telefoon || '', functie: c.functie || '',
     uitkomst: node.end ? node.end.status : 'Geen uitkomst gekozen',
+    outcome: node.end ? node.end.outcome : '',
     vervolg: (Array.isArray(s.vervolg) ? s.vervolg : []).join(' · '),
+    verloop: Array.isArray(s.verloop) ? s.verloop.filter(x => x && NODES[x.from] && NODES[x.to]) : [],
     bezwaren: facts.objections.join(', '),
     kosten: facts.kosten ? 'ja' : 'nee',
     opening: facts.opening,
@@ -2717,8 +2771,142 @@ function exportGesprekken() {
     { key: 'naam', label: 'Contactpersoon' }, { key: 'telefoon', label: 'Telefoon' }, { key: 'functie', label: 'Zoekt' },
     { key: 'uitkomst', label: 'Uitkomst' }, { key: 'vervolg', label: 'Vervolg' }, { key: 'bezwaren', label: 'Bezwaren' },
     { key: 'kosten', label: 'Kosten besproken' }, { key: 'opening', label: 'Opening' }, { key: 'notities', label: 'Notities' },
-    { key: 'beller', label: 'Gebeld door' }
-  ], rows);
+    { key: 'verloopTekst', label: 'Verloop' }, { key: 'beller', label: 'Gebeld door' }
+  ], rows.map(r => ({ ...r, verloopTekst: verloopText(r) })));
+}
+/* =========================================================================
+   Terugkijken: samenvatting per gesprek en wat het vaakst voorkomt
+   ========================================================================= */
+function tkEntries() {
+  const since = S.tkDays ? Date.now() - S.tkDays * 86400000 : 0;
+  return gesprekken
+    .map(g => ({ g, t: Date.parse(g.start) }))
+    .filter(x => !Number.isNaN(x.t) && x.t >= since)
+    .sort((a, b) => b.t - a.t)
+    .map(x => x.g);
+}
+// Bezwaar-naam van een stap: de knop uit de bezwarenbalk als de stap daarbij hoort, anders de stapnaam
+function objectionName(id) {
+  const f = FIXED.find(x => x.ladder.includes(id));
+  return f ? f.label : stepName(id);
+}
+function countTop(map, n) { return [...map.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]))).slice(0, n); }
+function pct(part, whole) { return whole ? Math.round((100 * part) / whole) + '%' : '–'; }
+function bump(map, key) { map.set(key, (map.get(key) || 0) + 1); }
+function tkAnalyse(list) {
+  const withV = list.filter(g => Array.isArray(g.verloop) && g.verloop.length);
+  // Gesprekken waarin is opgenomen (geen gehoor, voicemail en verkeerd nummer tellen niet mee)
+  const talks = withV.filter(g => !OUTCOMES[g.outcome] || OUTCOMES[g.outcome].gesprek).length;
+  const real = list.filter(g => OUTCOMES[g.outcome] && OUTCOMES[g.outcome].gesprek).length;
+  const afspraken = list.filter(g => g.outcome === 'afspraak').length;
+  const obj = new Map();
+  const objAfspraak = new Map();
+  const perStep = new Map();
+  const strand = new Map();
+  let strandTotal = 0;
+  withV.forEach(g => {
+    // Bezwaren: per gesprek één keer tellen
+    const names = new Set(g.verloop.filter(x => NODES[x.to].stage === 'bezwaar').map(x => objectionName(x.to)));
+    names.forEach(nm => { bump(obj, nm); if (g.outcome === 'afspraak') bump(objAfspraak, nm); });
+    // Wat de klant zei, per stap
+    g.verloop.forEach(x => {
+      if (x.kind !== 'antwoord' || !x.label) return;
+      if (!perStep.has(x.from)) perStep.set(x.from, new Map());
+      bump(perStep.get(x.from), x.label);
+    });
+    // Echte gesprekken zonder afspraak: de stap waar je was vlak voor het afronden
+    const o = OUTCOMES[g.outcome];
+    if (o && o.gesprek && g.outcome !== 'afspraak') {
+      const last = g.verloop[g.verloop.length - 1];
+      bump(strand, NODES[last.to].end ? last.from : last.to);
+      strandTotal++;
+    }
+  });
+  return { total: list.length, withV: withV.length, talks, real, afspraken, obj, objAfspraak, perStep, strand, strandTotal };
+}
+// Scripttekst met de gegevens van dát gesprek (niet van het lopende gesprek)
+function tkFill(text, g) {
+  const vals = { naam: g.naam, bedrijf: g.bedrijf, functie: g.functie, beller: g.beller, collega: collega(), groet: 'Goedendag' };
+  return String(text).split(/\n{2,}/).map(p => `<p>${esc(p)
+    .replace(/\[([^\]]+)\]/g, '<span class="instr">[$1]</span>')
+    .replace(/\{(\w+)\}/g, (m, k) => (vals[k] ? `<span class="var">${esc(vals[k])}</span>` : `<span class="var missing">${esc(k)}</span>`))
+    .replace(/\n/g, '<br>')}</p>`).join('');
+}
+function tkStepHtml(id, g) {
+  const say = overrides[id] != null ? overrides[id] : (NODES[id] && NODES[id].say) || '';
+  return `<details><summary>${esc(stepName(id))}</summary><div class="tk-text">${tkFill(say, g)}</div></details>`;
+}
+function tkTimeline(g) {
+  const items = [`<li>${tkStepHtml(g.verloop[0].from, g)}</li>`];
+  g.verloop.forEach(x => {
+    if (x.kind === 'antwoord' && x.label) items.push(`<li class="said">klant: ${esc(x.label)}</li>`);
+    else if (x.kind === 'bezwaar') items.push(`<li class="said bezwaar">bezwaar: ${esc(x.label)}</li>`);
+    else if (x.kind === 'zoeken') items.push(`<li class="said">gezocht: ${esc(x.label || '…')}</li>`);
+    items.push(`<li>${tkStepHtml(x.to, g)}</li>`);
+  });
+  return `<ol class="tk-timeline">${items.join('')}</ol>`;
+}
+function tkItemHtml(g) {
+  const d = new Date(g.start);
+  const when = Number.isNaN(d.getTime()) ? '' : `${fmtDay(isoDate(d))} · ${hhmm(d)}`;
+  const who = [g.bedrijf, g.naam].filter(Boolean).join(' · ') || '(geen naam ingevuld)';
+  const steps = Array.isArray(g.verloop) ? g.verloop.length : 0;
+  return `<li class="item"><div class="item-main">
+      <div class="item-when">${esc(when)}<span class="tk-outcome${g.outcome === 'afspraak' ? ' afspraak' : ''}">${esc(g.uitkomst || '')}</span></div>
+      <div>${esc(who)}</div>
+      ${g.vervolg ? `<div class="item-meta">Vervolg: ${esc(g.vervolg)}</div>` : ''}
+      ${steps ? `<details class="tk-detail"><summary>Verloop (${steps} ${steps === 1 ? 'klik' : 'klikken'})</summary>${tkTimeline(g)}</details>` : '<div class="item-meta">Geen verloop vastgelegd (gesprek van vóór deze functie).</div>'}
+      ${g.notities ? `<div class="item-note">Notities: ${esc(g.notities)}</div>` : ''}
+    </div></li>`;
+}
+function renderTerugkijken() {
+  logCall(); // het lopende gesprek telt ook mee
+  document.querySelectorAll('#tkPeriod button').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.days) === S.tkDays)));
+  const list = tkEntries();
+  const a = tkAnalyse(list);
+  const periode = S.tkDays ? `de laatste ${S.tkDays} dagen` : 'totaal';
+  const zonder = a.total - a.withV;
+  $('#tkSummary').textContent = a.total
+    ? `${a.total} gesprek(ken) in ${periode}: ${a.real} echte gesprekken (opgenomen), ${a.afspraken} afspraken (${pct(a.afspraken, a.real)} van de echte gesprekken).${zonder ? ` ${zonder} gesprek(ken) zonder verloop (geen klik, of van vóór deze functie) tellen in de tabellen niet mee.` : ''}`
+    : `Nog geen gesprekken in ${periode}.`;
+  const table = (head, rows) => `<table class="tk-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+  const objRows = countTop(a.obj, 8).map(([nm, n]) => `<tr><td>${esc(nm)}</td><td class="num">${n}</td><td class="num">${pct(n, a.talks)}</td><td class="num">${a.objAfspraak.get(nm) || 0}</td></tr>`).join('');
+  const strandRows = countTop(a.strand, 8).map(([id, n]) => `<tr><td>${esc(stepName(id))}</td><td class="num">${n}</td><td class="num">${pct(n, a.strandTotal)}</td></tr>`).join('');
+  const steps = [...a.perStep.entries()]
+    .map(([id, m]) => ({ id, m, tot: [...m.values()].reduce((s, n) => s + n, 0) }))
+    .sort((x, y) => y.tot - x.tot)
+    .slice(0, 6);
+  const stepHtml = steps.map(s => `<div class="tk-step">${esc(stepName(s.id))} <span class="hint">(${s.tot}×)</span></div>${table('<th>Klant zegt</th><th class="num">Keer</th><th class="num">Aandeel</th>', countTop(s.m, 4).map(([lbl, n]) => `<tr><td>${esc(lbl)}</td><td class="num">${n}</td><td class="num">${pct(n, s.tot)}</td></tr>`).join(''))}`).join('');
+  $('#tk-grid').innerHTML = [
+    `<div class="card"><h2>Bezwaren die het vaakst komen</h2>
+      ${objRows ? table('<th>Bezwaar</th><th class="num">Gesprekken</th><th class="num">Aandeel</th><th class="num">Toch afspraak</th>', objRows) : '<p class="empty-state">Nog geen bezwaren vastgelegd in deze periode.</p>'}
+      <p class="hint">Per gesprek één keer geteld. "Aandeel": van de gesprekken waarin is opgenomen. "Toch afspraak": zo vaak werd het na dit bezwaar alsnog een afspraak.</p></div>`,
+    `<div class="card"><h2>Waar het geen afspraak werd</h2>
+      ${strandRows ? table('<th>Laatste stap</th><th class="num">Gesprekken</th><th class="num">Aandeel</th>', strandRows) : '<p class="empty-state">Nog geen opgenomen gesprekken zonder afspraak in deze periode.</p>'}
+      <p class="hint">Bij gesprekken die geen afspraak werden: de stap waar je was vlak voor het afronden. Hier valt het meeste te winnen.</p></div>`,
+    `<div class="card"><h2>Wat de klant zegt, per stap</h2>
+      ${stepHtml || '<p class="empty-state">Nog geen klantreacties vastgelegd in deze periode.</p>'}
+      <p class="hint">De stappen waar je het vaakst kwam, met de reacties die je daar aanklikte.</p></div>`
+  ].join('');
+  const shown = list.slice(0, S.tkLimit);
+  $('#tk-list').innerHTML = shown.length ? shown.map(tkItemHtml).join('') : '<p class="empty-state">Nog geen gesprekken in deze periode.</p>';
+  $('#tk-more').hidden = list.length <= S.tkLimit;
+}
+// Korte naam van een stap in het script
+function stepName(id) { const n = NODES[id]; return n ? (n.short || n.title) : String(id || ''); }
+// Tijdlijn als tekst: Opening → klant: "Waar gaat het over?" → Wie zijn wij → bezwaar: Geen tijd → …
+function verloopText(g) {
+  const v = Array.isArray(g.verloop) ? g.verloop : [];
+  if (!v.length) return '';
+  const parts = [stepName(v[0].from)];
+  v.forEach(x => {
+    if (x.kind === 'antwoord' && x.label) parts.push(`klant: ${x.label}`);
+    else if (x.kind === 'bezwaar') parts.push(`bezwaar: ${x.label}`);
+    else if (x.kind === 'zoeken') parts.push(`gezocht: ${x.label || '…'}`);
+    // Bij een bezwaar heet de eerste stap vaak hetzelfde als de knop; dan niet dubbel noemen
+    if (!(x.kind === 'bezwaar' && stepName(x.to) === x.label)) parts.push(stepName(x.to));
+  });
+  return parts.join(' → ');
 }
 function shortNote() {
   const c = ctx();
@@ -3929,7 +4117,7 @@ function saveDraft() {
   store.set(K.draft, {
     current: S.current, history: S.history, asked: S.asked, ctx: ctx(), notes: $('#notes').value,
     leadId: S.leadId, leadCounted: S.leadCounted, endApplied: S.endApplied, pd: S.pd,
-    callId: S.callId, startedAt: S.startedAt, telefoon: S.telefoon, vervolg: S.vervolg, at: Date.now()
+    callId: S.callId, startedAt: S.startedAt, telefoon: S.telefoon, vervolg: S.vervolg, verloop: S.verloop, at: Date.now()
   });
 }
 function restoreDraft() {
@@ -3944,6 +4132,7 @@ function restoreDraft() {
   S.startedAt = d.startedAt || null;
   S.telefoon = d.telefoon || '';
   S.vervolg = Array.isArray(d.vervolg) ? d.vervolg : [];
+  S.verloop = Array.isArray(d.verloop) ? d.verloop.filter(x => x && NODES[x.from] && NODES[x.to]) : [];
   S.history = d.history;
   S.asked = Array.isArray(d.asked) ? d.asked : [];
   S.leadId = d.leadId && leads.some(l => l.id === d.leadId) ? d.leadId : null;
@@ -4055,7 +4244,10 @@ function bindEvents() {
   /* Gesprek */
   $('#options').addEventListener('click', e => {
     const btn = e.target.closest('.opt');
-    if (btn) go(btn.dataset.next);
+    if (!btn) return;
+    // "Opgelost, terug naar het gesprek" is geen klantreactie
+    const back = btn.classList.contains('back');
+    go(btn.dataset.next, { label: back ? '' : btn.querySelector('.lbl').textContent, kind: back ? 'knop' : 'antwoord' });
   });
   $('#objgrid').addEventListener('click', e => {
     const btn = e.target.closest('.obj');
@@ -4065,21 +4257,21 @@ function bindEvents() {
     if (!f) return;
     const target = fixedTarget(f);
     if (target === S.current) { toast('Dit is de laatste stap voor dit bezwaar: rond netjes af.'); return; }
-    go(target);
+    go(target, { label: f.label, kind: 'bezwaar' });
   });
   document.querySelector('.nav-right').addEventListener('click', e => {
     const btn = e.target.closest('button[data-jump]');
     if (!btn) return;
     btn.blur();
-    go(btn.dataset.jump);
+    go(btn.dataset.jump, { label: btn.textContent, kind: 'knop' });
   });
   $('#precall').addEventListener('click', e => {
     const btn = e.target.closest('button[data-next]');
-    if (btn) go(btn.dataset.next);
+    if (btn) go(btn.dataset.next, { label: btn.textContent, kind: 'knop' });
   });
   $('#results').addEventListener('click', e => {
     const btn = e.target.closest('button[data-go]');
-    if (btn) go(btn.dataset.go);
+    if (btn) go(btn.dataset.go, { label: $('#search').value, kind: 'zoeken' });
   });
   $('#leadbar').addEventListener('click', e => {
     const btn = e.target.closest('button[data-lead]');
@@ -4235,6 +4427,16 @@ function bindEvents() {
   if (darkQuery) darkQuery.addEventListener('change', () => { if (themePref() === 'auto') applyTheme(); });
   applyTheme();
 
+  /* Terugkijken */
+  $('#tkPeriod').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-days]');
+    if (!btn) return;
+    S.tkDays = Number(btn.dataset.days);
+    S.tkLimit = 30;
+    renderTerugkijken();
+  });
+  $('#tk-more').addEventListener('click', () => { S.tkLimit += 30; renderTerugkijken(); });
+
   /* Uitdraaien */
   $('#expGesprekken').addEventListener('click', exportGesprekken);
   $('#settings').addEventListener('toggle', e => { if (e.currentTarget.open) renderExportStatus(); });
@@ -4261,7 +4463,7 @@ function bindEvents() {
     const hits = [...document.querySelectorAll('#results button[data-go]')];
     if (e.key === 'ArrowDown') { e.preventDefault(); S.searchSel = Math.min(S.searchSel + 1, hits.length - 1); renderResults(); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); S.searchSel = Math.max(S.searchSel - 1, 0); renderResults(); }
-    else if (e.key === 'Enter') { e.preventDefault(); const h = hits[S.searchSel]; if (h) { search.blur(); go(h.dataset.go); } }
+    else if (e.key === 'Enter') { e.preventDefault(); const h = hits[S.searchSel]; if (h) { const term = search.value; search.blur(); go(h.dataset.go, { label: term, kind: 'zoeken' }); } }
     else if (e.key === 'Escape') { closeSearch(); search.blur(); }
   });
 
@@ -4404,7 +4606,8 @@ window.__belhulp = {
   NODES, FIXED, PITCHES, S, validate, audit, searchNodes, buildNote, go, back, newCall, setTab, fixedTarget,
   parseDelimited, guessMapping, mapRow, commitImport, nextLead, callNext, startLead, pdRequest, onAgendaMessage, buildAgendaUrl,
   get leads() { return leads; }, get afspraken() { return afspraken; }, get terugbel() { return terugbel; }, get stats() { return stats; },
-  get gesprekken() { return gesprekken; }, logCall, exportGesprekken, collectSyncData, startFromCallback, saveAfspraak, saveTerugbel
+  get gesprekken() { return gesprekken; }, logCall, exportGesprekken, collectSyncData, startFromCallback, saveAfspraak, saveTerugbel,
+  renderTerugkijken, tkAnalyse, verloopText
 };
 init();
 </script>
