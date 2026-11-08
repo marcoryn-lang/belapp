@@ -4,26 +4,110 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CleverConcept Belhulp</title>
+<script>
+  // Thema zetten vóór het tekenen, zodat er geen flits van het verkeerde thema is.
+  // Keuze per apparaat (Instellingen → Weergave): light | dark | auto. Standaard licht.
+  (function () {
+    var pref = 'light';
+    try {
+      pref = JSON.parse(window.localStorage.getItem('cc5_theme')) || 'light';
+    } catch (err) {
+      console.warn('[Belhulp] WARN Themakeuze niet leesbaar, standaard licht gebruikt', err);
+    }
+    var dark = pref === 'dark' || (pref === 'auto' && !!window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  })();
+</script>
 <style>
+  /* Licht thema (standaard) */
   :root {
+    color-scheme: light;
+    --bg: #f2f4f8;
+    --panel: #ffffff;
+    --panel2: #e9edf4;
+    --field: #ffffff;
+    --border: #cdd6e3;
+    --text: #111827;
+    --muted: #4b5871;
+    --accent: #1d5fd1;
+    --accent-soft: #eaf1fd;
+    --on-accent: #ffffff;
+    --on-accent-sub: rgba(255, 255, 255, .85);
+    --selection: rgba(29, 95, 209, .22);
+    --yes: #15803d;
+    --yes-soft: #eaf6ee;
+    --on-yes: #ffffff;
+    --on-yes-sub: rgba(255, 255, 255, .85);
+    --warn: #b45309;
+    --warn-soft: #fff6e8;
+    --warn-line: #e9b872;
+    --on-warn: #ffffff;
+    --on-warn-sub: rgba(255, 255, 255, .88);
+    --danger: #c62828;
+    --danger-text: #c62828;
+    --overdue: #b91c1c;
+    --end: #64748b;
+    --end-soft: #f1f4f8;
+    --instr: #5a6579;
+    --missing: #b45309;
+    --link: #1d5fd1;
+    --var: #1d4ed8;
+    --var-line: rgba(29, 78, 216, .45);
+    --hover: rgba(17, 24, 39, .05);
+    --bg-fade: rgba(242, 244, 248, 0);
+    --shadow-card: 0 1px 3px rgba(17, 24, 39, .06);
+    --shadow-pop: 0 12px 32px rgba(17, 24, 39, .16);
+    /* Zachte 3D-knoppen: glans boven, schaduw eronder; ingedrukt valt de schaduw naar binnen */
+    --btn-sheen: linear-gradient(to bottom, rgba(255, 255, 255, .95), rgba(255, 255, 255, 0) 70%);
+    --btn-shadow: inset 0 1px 0 rgba(255, 255, 255, .95), 0 1px 2px rgba(17, 24, 39, .12), 0 4px 10px rgba(17, 24, 39, .08);
+    --btn-pressed: inset 0 2px 5px rgba(17, 24, 39, .22);
+    --primary-sheen: linear-gradient(to bottom, #4a86ec, #1d5fd1);
+    --primary-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 2px 6px rgba(29, 95, 209, .35);
+    --radius: 12px;
+  }
+  /* Donker thema (keuze in Instellingen → Weergave) */
+  :root[data-theme="dark"] {
     color-scheme: dark;
     --bg: #0b1a3a;
     --panel: #11264f;
     --panel2: #0d1f44;
+    --field: #0d1f44;
     --border: #264682;
     --text: #eef2f8;
     --muted: #a3b3cf;
     --accent: #4f8cff;
     --accent-soft: rgba(79, 140, 255, .14);
+    --on-accent: #ffffff;
+    --on-accent-sub: #e6edff;
+    --selection: rgba(79, 140, 255, .35);
     --yes: #22c55e;
     --yes-soft: rgba(34, 197, 94, .14);
+    --on-yes: #04210f;
+    --on-yes-sub: #064e24;
     --warn: #f59e0b;
     --warn-soft: rgba(245, 158, 11, .13);
+    --warn-line: rgba(245, 158, 11, .55);
+    --on-warn: #1a1205;
+    --on-warn-sub: #3b2a06;
     --danger: #ef4444;
+    --danger-text: #fecaca;
+    --overdue: #fca5a5;
     --end: #94a3b8;
+    --end-soft: rgba(148, 163, 184, .1);
     --instr: #93a7cc;
     --missing: #fbbf24;
-    --radius: 12px;
+    --link: #9cc0ff;
+    --var: #cfe0ff;
+    --var-line: rgba(207, 224, 255, .5);
+    --hover: rgba(255, 255, 255, .06);
+    --bg-fade: rgba(11, 26, 58, 0);
+    --shadow-card: none;
+    --shadow-pop: 0 10px 30px rgba(0, 0, 0, .45);
+    --btn-sheen: linear-gradient(to bottom, rgba(255, 255, 255, .08), rgba(255, 255, 255, 0) 70%);
+    --btn-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 1px 2px rgba(0, 0, 0, .35), 0 4px 10px rgba(0, 0, 0, .25);
+    --btn-pressed: inset 0 2px 5px rgba(0, 0, 0, .45);
+    --primary-sheen: linear-gradient(to bottom, #6a9dff, #4f8cff);
+    --primary-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 2px 6px rgba(0, 0, 0, .35);
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -34,17 +118,20 @@
     font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     min-height: 100vh;
   }
-  a { color: #9cc0ff; }
+  a { color: var(--link); }
+  ::selection { background: var(--selection); }
   button { font: inherit; color: inherit; cursor: pointer; }
   button:disabled { opacity: .45; cursor: default; }
   input, textarea, select {
     font: inherit;
     color: var(--text);
-    background: var(--panel2);
+    background: var(--field);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 7px 10px;
     width: 100%;
+    caret-color: var(--accent);
+    accent-color: var(--accent);
   }
   input[type="checkbox"], input[type="radio"] { width: auto; }
   input:focus, textarea:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -68,7 +155,7 @@
   .btn:hover:not(:disabled) { border-color: var(--accent); }
   .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
   .btn-sm { padding: 4px 9px; font-size: .8rem; }
-  .btn-danger:hover:not(:disabled) { border-color: var(--danger); color: #fecaca; }
+  .btn-danger:hover:not(:disabled) { border-color: var(--danger); color: var(--danger-text); }
 
   .settings { position: relative; }
   .settings summary { list-style: none; }
@@ -76,10 +163,13 @@
   .settings .panel {
     position: absolute; right: 0; top: calc(100% + 6px); width: 360px; max-width: calc(100vw - 32px); z-index: 20;
     background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.45); display: flex; flex-direction: column; gap: 10px;
+    box-shadow: var(--shadow-pop); display: flex; flex-direction: column; gap: 10px;
     max-height: 80vh; overflow: auto;
   }
   .settings h3 { margin: 6px 0 0; font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  /* Het paneel scrollt; onderdelen mogen niet krimpen (anders klapt bv. de weergavekeuze in tot 0px) */
+  .settings .panel > * { flex-shrink: 0; }
+  .settings .panel .seg { align-self: flex-start; }
 
   /* ---------- Tabbladen ---------- */
   .tabs { display: flex; gap: 2px; padding: 0 20px; background: var(--panel2); border-bottom: 1px solid var(--border); overflow-x: auto; }
@@ -87,7 +177,7 @@
   .tab:hover { color: var(--text); }
   .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
   .count { font-size: .72rem; min-width: 1.6em; padding: 1px 6px; border-radius: 999px; background: var(--border); color: var(--text); text-align: center; }
-  .count.due { background: var(--warn); color: #1a1205; }
+  .count.due { background: var(--warn); color: var(--on-warn); }
   .count.alert { background: var(--danger); color: #fff; }
 
   /* ---------- Gesprek ---------- */
@@ -109,7 +199,7 @@
   @media (max-width: 560px) { .nav { flex-wrap: wrap; } .nav .path { flex-basis: 100%; order: 3; } }
   .precall { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; font-size: .8rem; color: var(--muted); }
 
-  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow-card); }
   .card h2 { font-size: 1rem; margin: 0 0 10px; }
   .pitchsel { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
   .pitchsel .lbl { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
@@ -124,14 +214,14 @@
   .say p { margin: 0 0 .7em; }
   .say p:last-child { margin-bottom: 0; }
   .instr { color: var(--instr); font-style: italic; font-size: .9em; }
-  .var { color: #cfe0ff; border-bottom: 1px dashed rgba(207,224,255,.5); }
+  .var { color: var(--var); border-bottom: 1px dashed var(--var-line); }
   .var.missing { color: var(--missing); border-bottom-color: var(--missing); }
   .more { margin-top: 10px; }
   .more summary { cursor: pointer; color: var(--accent); font-size: .85rem; }
   .more .say { font-size: 1.04rem; margin-top: 8px; }
   .asklist { list-style: none; margin: 10px 0 0; padding: 0; font-size: 1.1rem; line-height: 1.5; }
   .asklist li { display: flex; gap: 10px; align-items: baseline; padding: 5px 8px; border-radius: 8px; cursor: pointer; }
-  .asklist li:hover { background: rgba(255,255,255,.05); }
+  .asklist li:hover { background: var(--hover); }
   .asklist li .n { color: var(--muted); font-size: .85rem; min-width: 1.4em; }
   .asklist li.done { color: var(--muted); text-decoration: line-through; }
   .edit-row { margin-top: 12px; font-size: .8rem; }
@@ -145,30 +235,38 @@
   @media (max-width: 1300px) { .options { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 640px) { .options { grid-template-columns: 1fr; } }
   .opt { display: flex; flex-direction: column; text-align: left; background: var(--accent-soft); border: 2px solid var(--accent); border-radius: 10px; padding: 9px 12px; min-height: 52px; }
-  .opt:hover { background: var(--accent); }
+  .opt:hover { background: var(--accent); color: var(--on-accent); }
   .opt .lbl { font-weight: 600; }
   .opt .sub { font-size: .8rem; color: var(--muted); }
-  .opt:hover .sub { color: #e6edff; }
+  .opt:hover .sub { color: var(--on-accent-sub); }
   .opt.yes { border-color: var(--yes); background: var(--yes-soft); }
-  .opt.yes:hover { background: var(--yes); color: #04210f; }
-  .opt.yes:hover .sub { color: #064e24; }
-  .opt.end { border-color: var(--end); background: rgba(148,163,184,.1); }
-  .opt.end:hover { background: #64748b; }
+  .opt.yes:hover { background: var(--yes); color: var(--on-yes); }
+  .opt.yes:hover .sub { color: var(--on-yes-sub); }
+  .opt.end { border-color: var(--end); background: var(--end-soft); }
+  .opt.end:hover { background: #64748b; color: #ffffff; }
+  .opt.end:hover .sub { color: rgba(255, 255, 255, .85); }
   .opt.back { border-style: dashed; border-color: var(--muted); background: transparent; }
-  .opt.back:hover { background: rgba(255,255,255,.08); }
+  .opt.back:hover { background: var(--hover); }
 
-  .objbar { position: sticky; bottom: 0; margin-top: 8px; padding: 10px 0 14px; background: linear-gradient(to top, var(--bg) 88%, rgba(11,26,58,0)); z-index: 4; }
+  .objbar { position: sticky; bottom: 0; margin-top: 8px; padding: 10px 0 14px; background: linear-gradient(to top, var(--bg) 88%, var(--bg-fade)); z-index: 4; }
   .objgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
   @media (max-width: 1300px) { .objgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 560px) { .objgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  .obj { display: flex; flex-direction: column; gap: 1px; text-align: left; background: var(--warn-soft); border: 2px solid rgba(245,158,11,.55); border-radius: 10px; padding: 7px 10px; }
-  .obj:hover, .obj.active { background: var(--warn); border-color: var(--warn); color: #1a1205; }
+  .obj { display: flex; flex-direction: column; gap: 1px; text-align: left; background: var(--warn-soft); border: 2px solid var(--warn-line); border-radius: 10px; padding: 7px 10px; }
+  .obj:hover, .obj.active { background: var(--warn); border-color: var(--warn); color: var(--on-warn); }
   .obj .top { font-weight: 600; font-size: .92rem; }
   .obj .sub { font-size: .75rem; color: var(--muted); }
   .obj .lvl { font-size: .7rem; font-weight: 700; color: var(--warn); }
-  .obj:hover .sub, .obj.active .sub, .obj:hover .lvl, .obj.active .lvl { color: #3b2a06; }
+  .obj:hover .sub, .obj.active .sub, .obj:hover .lvl, .obj.active .lvl { color: var(--on-warn-sub); }
+
+  /* Zachte 3D-knoppen (variant A): glans en schaduw; ingedrukt zakt de knop 1px en valt de schaduw naar binnen */
+  .opt, .opt.yes, .opt.end, .obj, .btn, .chipbtn { background-image: var(--btn-sheen); box-shadow: var(--btn-shadow); transition: transform .07s ease-out, box-shadow .07s ease-out; }
+  .opt.back { background-image: none; box-shadow: none; }
+  .btn-primary { background-image: var(--primary-sheen); box-shadow: var(--primary-shadow); }
+  .opt:active:not(:disabled), .obj:active:not(:disabled), .btn:active:not(:disabled), .chipbtn:active:not(:disabled) { transform: translateY(1px); box-shadow: var(--btn-pressed); background-image: none; }
+  @media (prefers-reduced-motion: reduce) { .opt, .obj, .btn, .chipbtn { transition: none; } }
   .searchrow { position: relative; margin-top: 8px; }
-  .results { position: absolute; left: 0; right: 0; bottom: calc(100% + 4px); z-index: 5; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; max-height: 320px; overflow: auto; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+  .results { position: absolute; left: 0; right: 0; bottom: calc(100% + 4px); z-index: 5; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; max-height: 320px; overflow: auto; box-shadow: var(--shadow-pop); }
   .results button { display: block; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--border); padding: 8px 12px; }
   .results button:last-child { border-bottom: 0; }
   .results button:hover, .results button.sel { background: var(--accent-soft); }
@@ -224,7 +322,7 @@
   .list-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
   .list-head h2 { margin: 0; }
   .group-title { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 6px; font-weight: 600; }
-  .group-title.overdue { color: #fca5a5; }
+  .group-title.overdue { color: var(--overdue); }
   .group-title.today { color: var(--warn); }
   details.group > summary { cursor: pointer; }
   .items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -261,7 +359,7 @@
   .lead-meta { font-size: .82rem; color: var(--muted); }
   .status { font-size: .72rem; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); white-space: nowrap; }
 
-  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--yes); color: #04210f; font-weight: 600; padding: 8px 16px; border-radius: 999px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 30; max-width: calc(100vw - 32px); text-align: center; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--yes); color: var(--on-yes); font-weight: 600; padding: 8px 16px; border-radius: 999px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 30; max-width: calc(100vw - 32px); text-align: center; }
   .toast.show { opacity: 1; }
   .toast.err { background: #f87171; color: #2b0606; }
 
@@ -299,6 +397,13 @@
   <details class="settings" id="settings">
     <summary class="btn">Instellingen</summary>
     <div class="panel">
+      <h3>Weergave</h3>
+      <div class="seg" role="group" aria-label="Weergave" id="themeSeg">
+        <button type="button" data-theme-pref="light" aria-pressed="false">Licht</button>
+        <button type="button" data-theme-pref="dark" aria-pressed="false">Donker</button>
+        <button type="button" data-theme-pref="auto" aria-pressed="false">Automatisch</button>
+      </div>
+      <p class="hint" style="margin-top:0">Geldt alleen voor dit apparaat. Automatisch volgt de instelling van je Mac of pc.</p>
       <h3>Jij en je collega</h3>
       <div class="field"><label for="setBeller">Jouw naam</label><input id="setBeller" autocomplete="off"></div>
       <div class="field"><label for="setCollega">Collega die de demo doet</label><input id="setCollega" autocomplete="off"></div>
@@ -578,7 +683,8 @@ const store = (() => {
 const K = {
   settings: 'cc3_settings', overrides: 'cc3_overrides', draft: 'cc4_draft', lastnote: 'cc3_lastnote',
   afspraken: 'cc3_afspraken', terugbel: 'cc3_terugbel', spiek: 'cc3_spiek',
-  leads: 'cc4_leads', stats: 'cc4_stats', pdtoken: 'cc4_pd_token', gesprekken: 'cc5_gesprekken'
+  leads: 'cc4_leads', stats: 'cc4_stats', pdtoken: 'cc4_pd_token', gesprekken: 'cc5_gesprekken',
+  theme: 'cc5_theme' // per apparaat, gaat bewust niet mee in de backup
 };
 const K_GH = 'cc5_gh_config';
 // On GitHub Pages (<user>.github.io) the owner follows from the address; elsewhere it is filled in under Instellingen.
@@ -2289,6 +2395,21 @@ function toUtcParts(dateIso, time) {
   const [hh, mm] = time.split(':').map(Number);
   const iso = new Date(y, m - 1, d, hh, mm).toISOString();
   return { due_date: iso.slice(0, 10), due_time: iso.slice(11, 16) };
+}
+/* =========================================================================
+   Weergave: licht (standaard), donker of automatisch (volgt het apparaat)
+   ========================================================================= */
+const THEMES = ['light', 'dark', 'auto'];
+const darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+function themePref() {
+  const pref = store.get(K.theme, 'light');
+  return THEMES.includes(pref) ? pref : 'light';
+}
+function applyTheme() {
+  const pref = themePref();
+  const dark = pref === 'dark' || (pref === 'auto' && Boolean(darkQuery && darkQuery.matches));
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  document.querySelectorAll('#themeSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themePref === pref)));
 }
 function nlDate(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
@@ -4074,6 +4195,16 @@ function bindEvents() {
     $('#ghStatus').textContent = 'GitHub-gegevens lokaal gewist.';
   });
   $('#ghStatus').textContent = ghEnabled() ? 'Ingesteld. Klik op "Nu opslaan".' : 'Nog niet ingesteld. Vul de vier velden in.';
+
+  /* Weergave */
+  $('#themeSeg').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-theme-pref]');
+    if (!btn) return;
+    if (!store.set(K.theme, btn.dataset.themePref)) toast('Weergave aangepast, maar niet bewaard (opslag geblokkeerd)', true);
+    applyTheme();
+  });
+  if (darkQuery) darkQuery.addEventListener('change', () => { if (themePref() === 'auto') applyTheme(); });
+  applyTheme();
 
   /* Uitdraaien */
   $('#expGesprekken').addEventListener('click', exportGesprekken);
