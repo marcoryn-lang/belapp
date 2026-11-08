@@ -141,13 +141,14 @@
   .banner.info { background: #5b3a06; color: #fde9c2; }
 
   /* ---------- Kopbalk ---------- */
-  .topbar { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; padding: 12px 20px; background: var(--panel2); }
+  .topbar { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; padding: 8px 20px; background: var(--panel2); }
   .brand { font-weight: 700; font-size: 1.05rem; margin-right: auto; align-self: center; }
   .brand small { display: block; font-weight: 400; color: var(--muted); font-size: .8rem; }
   .field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .field label, .field .lbl { font-size: .75rem; color: var(--muted); }
   .topbar .field { flex: 0 1 170px; min-width: 120px; }
   .topbar .field.lead { flex: none; }
+  .topbar .field.wide { flex-basis: 240px; } /* label op één regel, scheelt hoogte */
   .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
   .seg button { background: transparent; border: 0; padding: 7px 12px; font-size: .85rem; color: var(--muted); }
   .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
@@ -187,6 +188,10 @@
   .leadbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; background: var(--panel2); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 10px; padding: 8px 12px; margin-bottom: 10px; font-size: .9rem; }
   .leadbar .grow { flex: 1 1 auto; min-width: 0; }
   .stepper { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  /* Stappenbalk en Terug-rij naast elkaar (op smalle schermen onder elkaar) */
+  .stepnav { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin-bottom: 8px; }
+  .stepnav .stepper, .stepnav .nav { margin-bottom: 0; }
+  .stepnav .nav { flex: 1 1 420px; }
   .step { font-size: .8rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
   .step.done { color: var(--text); border-color: var(--accent); }
   .step.current { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
@@ -220,6 +225,9 @@
   @media (max-width: 640px) { .say.compact { grid-template-columns: 1fr; } }
   .say.compact p { margin: 0; }
   .say.compact p > .instr:first-child { display: block; font-style: normal; font-weight: 600; font-size: .8rem; color: var(--muted); margin-bottom: 2px; }
+  .title-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: 0 0 6px; }
+  .title-row .node-title { margin: 0; }
+  .title-row .linkbtn { font-size: .8rem; }
   .goal-fold { margin: 0 0 10px; font-size: .85rem; color: var(--muted); }
   .goal-fold summary { cursor: pointer; width: max-content; }
   .goal-fold .goal { margin: 6px 0 0; }
@@ -244,7 +252,7 @@
   .options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   @media (max-width: 1300px) { .options { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 640px) { .options { grid-template-columns: 1fr; } }
-  .opt { display: flex; flex-direction: column; text-align: left; background: var(--accent-soft); border: 2px solid var(--accent); border-radius: 10px; padding: 9px 12px; min-height: 52px; }
+  .opt { display: flex; flex-direction: column; text-align: left; background: var(--accent-soft); border: 2px solid var(--accent); border-radius: 10px; padding: 7px 12px; min-height: 46px; }
   .opt:hover { background: var(--accent); color: var(--on-accent); }
   .opt .lbl { font-weight: 600; }
   .opt .sub { font-size: .8rem; color: var(--muted); }
@@ -258,7 +266,7 @@
   .opt.back { border-style: dashed; border-color: var(--muted); background: transparent; }
   .opt.back:hover { background: var(--hover); }
 
-  .objbar { position: sticky; bottom: 0; margin-top: 8px; padding: 10px 0 14px; background: linear-gradient(to top, var(--bg) 88%, var(--bg-fade)); z-index: 4; }
+  .objbar { position: sticky; bottom: 0; margin-top: 8px; padding: 6px 0 10px; background: linear-gradient(to top, var(--bg) 88%, var(--bg-fade)); z-index: 4; }
   .objgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
   @media (max-width: 1300px) { .objgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 560px) { .objgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -275,7 +283,9 @@
   .btn-primary { background-image: var(--primary-sheen); box-shadow: var(--primary-shadow); }
   .opt:active:not(:disabled), .obj:active:not(:disabled), .btn:active:not(:disabled), .chipbtn:active:not(:disabled) { transform: translateY(1px); box-shadow: var(--btn-pressed); background-image: none; }
   @media (prefers-reduced-motion: reduce) { .opt, .obj, .btn, .chipbtn { transition: none; } }
-  .searchrow { position: relative; margin-top: 8px; }
+  .searchrow { position: relative; margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+  .searchrow #search { flex: 1 1 320px; min-width: 0; }
+  .searchrow .legend { margin: 0; white-space: nowrap; flex: none; }
   .results { position: absolute; left: 0; right: 0; bottom: calc(100% + 4px); z-index: 5; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; max-height: 320px; overflow: auto; box-shadow: var(--shadow-pop); }
   .results button { display: block; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--border); padding: 8px 12px; }
   .results button:last-child { border-bottom: 0; }
@@ -379,7 +389,7 @@
     .banner, .topbar, .tabs { flex: none; }
     .layout { flex: 1 1 auto; min-height: 0; }
     .layout > section { display: flex; flex-direction: column; min-height: 0; }
-    .leadbar, .stepper, .nav, .precall, .section-label, .options { flex: none; }
+    .leadbar, .stepnav, .precall, .section-label, .options { flex: none; }
     .card#nodeCard { flex: 1 1 auto; min-height: 140px; overflow: auto; }
     .objbar { position: static; flex: none; background: none; }
     .side { overflow: auto; min-height: 0; }
@@ -397,7 +407,7 @@
   <div class="brand">CleverConcept belhulp <span style="font-weight:400;color:var(--muted)">v5</span><small>Klik wat de klant zegt, lees voor wat er staat</small></div>
   <div class="field"><label for="ctxNaam">Naam contactpersoon</label><input id="ctxNaam" autocomplete="off" placeholder="bijv. Piet"></div>
   <div class="field"><label for="ctxBedrijf">Bedrijf</label><input id="ctxBedrijf" autocomplete="off" placeholder="bijv. Jansen Installatie"></div>
-  <div class="field"><label for="ctxFunctie">Functie die ze zoeken (meervoud)</label><input id="ctxFunctie" autocomplete="off" placeholder="bijv. monteurs"></div>
+  <div class="field wide"><label for="ctxFunctie">Functie die ze zoeken (meervoud)</label><input id="ctxFunctie" autocomplete="off" placeholder="bijv. monteurs"></div>
   <div class="field lead"><span class="lbl">Soort lead</span>
     <div class="seg" role="group" aria-label="Soort lead">
       <button type="button" id="lead1b" aria-pressed="true">Nieuw (1b)</button>
@@ -468,14 +478,16 @@
 <main class="layout" id="tab-gesprek" role="tabpanel" aria-labelledby="tabbtn-gesprek">
   <section>
     <div class="leadbar" id="leadbar" hidden></div>
-    <div class="stepper" id="stepper"></div>
-    <div class="nav">
-      <button type="button" class="btn" id="backBtn">&larr; Terug</button>
-      <span class="path" id="path"></span>
-      <span class="nav-right">
-        <button type="button" class="btn btn-sm" data-jump="p_verhaal">Ons verhaal</button>
-        <button type="button" class="btn btn-sm" data-jump="p_waaromdemo">Waarom een demo?</button>
-      </span>
+    <div class="stepnav">
+      <div class="stepper" id="stepper"></div>
+      <div class="nav">
+        <button type="button" class="btn" id="backBtn">&larr; Terug</button>
+        <span class="path" id="path"></span>
+        <span class="nav-right">
+          <button type="button" class="btn btn-sm" data-jump="p_verhaal">Ons verhaal</button>
+          <button type="button" class="btn btn-sm" data-jump="p_waaromdemo">Waarom een demo?</button>
+        </span>
+      </div>
     </div>
     <div class="precall" id="precall" hidden>
       <span>Neemt niet op?</span>
@@ -493,8 +505,8 @@
       <div class="searchrow">
         <input id="search" autocomplete="off" placeholder="Iets anders? Typ bijv. linkedin, garantie, offerte, verkoop, aangenomen, referenties…">
         <div class="results" id="results" hidden></div>
+        <div class="legend"><span class="instr">[grijs]</span> = niet voorlezen · <span class="var missing">geel</span> = nog invullen</div>
       </div>
-      <div class="legend"><span class="instr">[grijs]</span> = niet voorlezen · <span class="var missing">geel</span> = nog invullen</div>
     </div>
   </section>
 
@@ -3168,13 +3180,16 @@ function pitchSelectorHtml() {
 function renderCard(v) {
   const edited = overrides[v.overrideKey] != null;
   const parts = [pitchSelectorHtml()];
-  parts.push(`<h1 class="node-title">${esc(v.title)}${edited ? '<span class="badge-edited">aangepast</span>' : ''}</h1>`);
-  // Lange voorleesteksten (compact): Doel en Tip ingeklapt, zodat de tekst zelf in beeld past.
+  const titleHtml = `<h1 class="node-title">${esc(v.title)}${edited ? '<span class="badge-edited">aangepast</span>' : ''}</h1>`;
+  // Lange voorleesteksten (compact): "Tekst aanpassen" naast de titel, geen "Zeg dit"-label,
+  // en Doel en Tip ingeklapt, zodat de tekst zelf in beeld past.
+  if (v.compact && !S.editing) parts.push(`<div class="title-row">${titleHtml}<button type="button" class="linkbtn" data-act="edit">Tekst aanpassen</button></div>`);
+  else parts.push(titleHtml);
   const goalHtml = v.goal ? `<p class="goal"><b>Doel:</b> ${fillInline(v.goal)}</p>` : '';
   const tipHtml = v.tip ? `<p class="goal tip"><b>Tip:</b> ${fillInline(v.tip)}</p>` : '';
   if (v.compact && (goalHtml || tipHtml)) parts.push(`<details class="goal-fold"><summary>Doel en tip</summary>${goalHtml}${tipHtml}</details>`);
   else if (goalHtml) parts.push(goalHtml);
-  parts.push('<div class="say-label">Zeg dit</div>');
+  if (!v.compact || S.editing) parts.push('<div class="say-label">Zeg dit</div>');
   if (S.editing) {
     parts.push(`<div class="editor">
       <textarea id="editText" aria-label="Tekst aanpassen">${esc(v.say)}</textarea>
@@ -3210,7 +3225,7 @@ function renderCard(v) {
       <div class="row">${saveBtn}${pdBtn}<button type="button" class="btn" data-act="copy">Kopieer verslag</button>${nextBtn}</div>
     </div>`);
   }
-  if (!S.editing) parts.push('<div class="edit-row"><button type="button" class="linkbtn" data-act="edit">Tekst aanpassen</button></div>');
+  if (!S.editing && !v.compact) parts.push('<div class="edit-row"><button type="button" class="linkbtn" data-act="edit">Tekst aanpassen</button></div>');
   const card = $('#nodeCard');
   const sameNode = card.dataset.node === S.current;
   card.innerHTML = parts.join('');
