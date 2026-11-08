@@ -181,7 +181,7 @@
   .count.alert { background: var(--danger); color: #fff; }
 
   /* ---------- Gesprek ---------- */
-  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 20px; padding: 14px 20px 0; max-width: 1500px; margin: 0 auto; width: 100%; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 20px; padding: 14px 20px 0; max-width: 1900px; margin: 0 auto; width: 100%; }
   @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
 
   .leadbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; background: var(--panel2); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 10px; padding: 8px 12px; margin-bottom: 10px; font-size: .9rem; }
@@ -213,6 +213,16 @@
   .say { font-size: 1.16rem; line-height: 1.6; max-width: 76ch; }
   .say p { margin: 0 0 .7em; }
   .say p:last-child { margin-bottom: 0; }
+  /* Lange voorleesteksten (bv. Ons verhaal): kleiner en als raster (1-2-3 / 4-5-6), zodat alles in één oogopslag past
+     en je bij te weinig ruimte van links naar rechts en dan één keer omlaag leest */
+  .say.compact { font-size: .95rem; line-height: 1.45; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 28px; }
+  @media (min-width: 1300px) { .say.compact { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .say.compact { grid-template-columns: 1fr; } }
+  .say.compact p { margin: 0; }
+  .say.compact p > .instr:first-child { display: block; font-style: normal; font-weight: 600; font-size: .8rem; color: var(--muted); margin-bottom: 2px; }
+  .goal-fold { margin: 0 0 10px; font-size: .85rem; color: var(--muted); }
+  .goal-fold summary { cursor: pointer; width: max-content; }
+  .goal-fold .goal { margin: 6px 0 0; }
   .instr { color: var(--instr); font-style: italic; font-size: .9em; }
   .var { color: var(--var); border-bottom: 1px dashed var(--var-line); }
   .var.missing { color: var(--missing); border-bottom-color: var(--missing); }
@@ -975,7 +985,7 @@ Mijn collega {collega} laat je in een online demo van zo'n 20 minuten zien hoe d
     ]
   },
   p_verhaal: {
-    title: 'Ons verhaal: wat CleverConcept doet', short: 'Ons verhaal', stage: 'pitch',
+    title: 'Ons verhaal: wat CleverConcept doet', short: 'Ons verhaal', stage: 'pitch', compact: true,
     goal: 'Het complete verkoopverhaal in zes stappen. Gebruik het bij "vertel eens meer", of als totaalplaatje na de diagnose. Sla over wat de klant al weet; het eindigt altijd bij de demo.',
     kw: 'verhaal pitch wie zijn jullie wat doen jullie verkoopverhaal cleverconcept uitleg vertel meer',
     say: `[1. Het probleem] De markt is volledig overspannen. De goede {functie} hebben allemaal al een baan. Ze functioneren goed, maar een deel zit niet helemaal lekker op zijn plek: de reisafstand, een vervelende collega, te weinig doorgroeimogelijkheden. Alleen zijn ze niet ontevreden genoeg om zelf te gaan zoeken. Dat noemen we latent werkzoekenden, en dat is inmiddels 70 tot 80 procent van alle werkzoekenden.
@@ -3159,7 +3169,11 @@ function renderCard(v) {
   const edited = overrides[v.overrideKey] != null;
   const parts = [pitchSelectorHtml()];
   parts.push(`<h1 class="node-title">${esc(v.title)}${edited ? '<span class="badge-edited">aangepast</span>' : ''}</h1>`);
-  if (v.goal) parts.push(`<p class="goal"><b>Doel:</b> ${fillInline(v.goal)}</p>`);
+  // Lange voorleesteksten (compact): Doel en Tip ingeklapt, zodat de tekst zelf in beeld past.
+  const goalHtml = v.goal ? `<p class="goal"><b>Doel:</b> ${fillInline(v.goal)}</p>` : '';
+  const tipHtml = v.tip ? `<p class="goal tip"><b>Tip:</b> ${fillInline(v.tip)}</p>` : '';
+  if (v.compact && (goalHtml || tipHtml)) parts.push(`<details class="goal-fold"><summary>Doel en tip</summary>${goalHtml}${tipHtml}</details>`);
+  else if (goalHtml) parts.push(goalHtml);
   parts.push('<div class="say-label">Zeg dit</div>');
   if (S.editing) {
     parts.push(`<div class="editor">
@@ -3172,14 +3186,14 @@ function renderCard(v) {
       <p class="goal" style="margin-top:8px">Invulvelden: {groet} {naam} {functie} {bedrijf} {beller} {collega}. Tekst tussen [ ] is een instructie. Lege regel = nieuwe alinea.</p>
     </div>`);
   } else {
-    parts.push(`<div class="say">${fillBlock(v.say)}</div>`);
+    parts.push(`<div class="say${v.compact ? ' compact' : ''}">${fillBlock(v.say)}</div>`);
   }
   if (v.ask) {
     parts.push(`<ol class="asklist">${v.ask.map((q, i) => `<li data-ask="${i}" class="${S.asked.includes(i) ? 'done' : ''}"><span class="n">${i + 2}.</span><span>${fillInline(q)}</span></li>`).join('')}</ol>`);
   }
   if (v.more) parts.push(`<details class="more"><summary>Langere versie (als er ruimte is)</summary><div class="say">${fillBlock(v.more)}</div></details>`);
   if (v.action) parts.push(`<div class="card-action"><button type="button" class="btn btn-primary" data-act="${esc(v.action.act)}">${fillInline(v.action.label)}</button></div>`);
-  if (v.tip) parts.push(`<p class="goal tip"><b>Tip:</b> ${fillInline(v.tip)}</p>`);
+  if (tipHtml && !v.compact) parts.push(tipHtml);
   if (v.end) {
     const saveBtn = v.end.save === 'afspraak'
       ? '<button type="button" class="btn btn-primary" data-act="save-afspraak">Afspraak vastleggen</button>'
