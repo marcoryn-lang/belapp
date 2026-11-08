@@ -2134,6 +2134,12 @@ const SPIEK_SCENARIOS = [
   ['Op zoek, werkt met andere partij', 'Wat doet die partij? Social media-bureau met lopende campagne: géén afspraak, later terugbellen.'],
   ['Op zoek, "nu even geen mogelijkheid"', 'Reden vragen. Aanname rechtzetten, anders demo desnoods over een paar weken.']
 ];
+// Receptie of collega houdt de boot af bij het doorverbinden.
+const SPIEK_RECEPTIE = [
+  ['"Waar gaat het over?"', 'Ik bel over jullie vacature voor {functie}. Wij bereiken juist de vakmensen die nu nog bij een ander werken, en ik wil kort checken of dat voor jullie speelt. Kun je me even met [naam] doorverbinden? [Geen vacature gezien? Zeg dan: "over het vinden van goede {functie}".]'],
+  ['"Daar hebben we geen interesse in"', 'Dat kan goed. Ik weet zelf ook nog niet of het bij jullie past. Dat kan [naam] in twee minuten beoordelen, en is het niets, dan hoort hij of zij niets meer van me. Zou je me even willen doorverbinden?'],
+  ['"Hij zit in een gesprek" / "Bel later maar"', 'Geen probleem. Hoe kan ik [naam] het beste te pakken krijgen: eerder \'s ochtends of aan het eind van de dag? En heeft hij of zij een direct nummer? … En mag ik jouw naam ook, dan weet ik bij wie ik moet zijn?']
+];
 const SPIEK_REGELS = [
   'Eerst snappen, dan de diagnose, dan het recept. Niet meteen pitchen.',
   'Bij elk bezwaar: eerst erkennen ("Snap ik", "Helemaal terecht"), dan één open vraag, dan een concrete volgende stap.',
@@ -3121,6 +3127,8 @@ function renderSpiek() {
     `<div class="card"><h2>De vragen, in deze volgorde</h2><ol class="ref-list">${SPIEK_VRAGEN.map(q => `<li>${fillInline(q)}</li>`).join('')}</ol>
       <p class="hint">Noemen ze een partij? "Puur uit nieuwsgierigheid: wat doet die partij precies voor jullie?"</p></div>`,
     `<div class="card"><h2>Scenario's en je doel</h2><dl class="ref-dl">${SPIEK_SCENARIOS.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${fillInline(b)}</dd>`).join('')}</dl></div>`,
+    `<div class="card"><h2>Langs de receptie</h2><dl class="ref-dl">${SPIEK_RECEPTIE.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${fillInline(b)}</dd>`).join('')}</dl>
+      <p class="hint">Hang nooit op zonder vier dingen: de naam van de beslisser, het beste moment, een direct nummer en de naam van de receptionist. Die laatste gebruik je bij de volgende poging: "Hoi Sanne, we spraken elkaar vorige week." Het hele receptiepad staat in het gesprek onder "Niet de juiste persoon".</p></div>`,
     `<div class="card"><h2>Spelregels</h2><ul class="ref-list">${SPIEK_REGELS.map(r => `<li>${fillInline(r)}</li>`).join('')}</ul></div>`,
     `<div class="card"><h2>Wat doen de anderen?</h2><dl class="ref-dl">${SPIEK_ANDEREN.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${fillInline(b)}</dd>`).join('')}</dl></div>`,
     `<div class="card"><h2>Latent werkzoekenden: zo zeg je het</h2><div class="ref-text">${fillBlock(SPIEK_LATENT)}</div></div>`
