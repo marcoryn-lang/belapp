@@ -205,6 +205,9 @@
   .ref-dl dt { color: var(--muted); font-weight: 600; }
   .ref-dl dd { margin: 0; }
   @media (max-width: 560px) { .ref-dl { grid-template-columns: 1fr; } .ref-dl dd { margin-bottom: 6px; } }
+  /* Lange antwoorden: situatie boven, antwoord eronder */
+  .ref-dl.stack { grid-template-columns: 1fr; }
+  .ref-dl.stack dd { margin-bottom: 8px; }
   .ref-text p { margin: 0 0 .6em; }
   .stats { width: 100%; border-collapse: collapse; font-size: .88rem; }
   .stats th, .stats td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--border); }
@@ -3127,7 +3130,7 @@ function renderSpiek() {
     `<div class="card"><h2>De vragen, in deze volgorde</h2><ol class="ref-list">${SPIEK_VRAGEN.map(q => `<li>${fillInline(q)}</li>`).join('')}</ol>
       <p class="hint">Noemen ze een partij? "Puur uit nieuwsgierigheid: wat doet die partij precies voor jullie?"</p></div>`,
     `<div class="card"><h2>Scenario's en je doel</h2><dl class="ref-dl">${SPIEK_SCENARIOS.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${fillInline(b)}</dd>`).join('')}</dl></div>`,
-    `<div class="card"><h2>Langs de receptie</h2><dl class="ref-dl">${SPIEK_RECEPTIE.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${fillInline(b)}</dd>`).join('')}</dl>
+    `<div class="card"><h2>Langs de receptie</h2><dl class="ref-dl stack">${SPIEK_RECEPTIE.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${fillInline(b)}</dd>`).join('')}</dl>
       <p class="hint">Hang nooit op zonder vier dingen: de naam van de beslisser, het beste moment, een direct nummer en de naam van de receptionist. Die laatste gebruik je bij de volgende poging: "Hoi Sanne, we spraken elkaar vorige week." Het hele receptiepad staat in het gesprek onder "Niet de juiste persoon".</p></div>`,
     `<div class="card"><h2>Spelregels</h2><ul class="ref-list">${SPIEK_REGELS.map(r => `<li>${fillInline(r)}</li>`).join('')}</ul></div>`,
     `<div class="card"><h2>Wat doen de anderen?</h2><dl class="ref-dl">${SPIEK_ANDEREN.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${fillInline(b)}</dd>`).join('')}</dl></div>`,
